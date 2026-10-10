@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>踩刹车模拟器</title>
+<style>
+:root{--bg:#f4f5f7;--fg:#1c1f26;--card:#fff;--ac:#e5484d;--mut:#6b7280;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161a;--fg:#eceef2;--card:#1f2228;--mut:#9aa1ad}}
+:root[data-theme="dark"]{--bg:#14161a;--fg:#eceef2;--card:#1f2228;--mut:#9aa1ad}
+*{box-sizing:border-box;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+.w{max-width:480px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:4px 0 2px;text-align:center}
+.sub{text-align:center;color:var(--mut);font-size:12px;margin-bottom:12px}
+.cars{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:12px}
+.cars button{border:1px solid var(--mut);background:var(--card);color:var(--fg);border-radius:20px;padding:8px 14px;font-size:14px}
+.cars button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.card{background:var(--card);border-radius:16px;padding:16px;text-align:center}
+.spd{font-size:44px;font-weight:700}.spd small{font-size:14px;color:var(--mut)}
+.bar{height:10px;border-radius:5px;background:var(--bg);overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f5a623,var(--ac))}
+.msg{min-height:44px;margin:8px 0;font-weight:600}
+.stage{position:relative;height:200px;margin:6px auto}
+.pedal{position:absolute;left:50%;bottom:0;width:110px;height:180px;margin-left:-55px;transform-origin:50% 100%;transition:transform .08s}
+.arm{position:absolute;left:44px;bottom:0;width:22px;height:90px;background:#6b7280;border-radius:4px}
+.pad{position:absolute;left:0;bottom:80px;width:110px;height:100px;border-radius:14px;background:repeating-linear-gradient(0deg,#2b2f37 0 8px,#3a3f49 8px 12px);border:3px solid #9aa1ad;transform-origin:55px 100px}
+.broke .pad{animation:fall 1s ease-in forwards}
+.broke .arm{height:48px;clip-path:polygon(0 0,40% 20%,70% 0,100% 25%,100% 100%,0 100%)}
+@keyframes fall{to{transform:translate(70px,150px) rotate(70deg);opacity:0}}
+.hint{font-size:12px;color:var(--mut)}
+.rst{margin-top:10px;border:0;background:var(--fg);color:var(--bg);border-radius:10px;padding:10px 22px;font-size:14px}
+.shake{animation:sh .25s}@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.dis{font-size:11px;color:var(--mut);text-align:center;margin-top:14px;line-height:1.6}
+</style></head><body><div class="w" id="app">
+<h1>🦶 踩刹车模拟器</h1>
+<div class="sub">选择车型,然后用力踩住踏板!</div>
+<div class="cars" id="cars"></div>
+<div class="card">
+ <div class="spd"><span id="spd">120</span> <small>km/h</small></div>
+ <div class="bar"><i id="f"></i></div>
+ <div class="hint">踩踏力度 <span id="p">0</span>%</div>
+ <div class="msg" id="msg">按住下方踏板不放</div>
+ <div class="stage"><div class="pedal" id="pedal"><div class="arm"></div><div class="pad"></div></div></div>
+ <button class="rst" id="rst">重置</button>
+</div>
+<div class="dis">⚠️ 本小游戏为虚构的娱乐/恶搞作品,结果由程序预设,不代表任何品牌车辆的真实性能或事件事实。</div>
+</div>
+<script>
+const CARS=["特斯拉 Model S","比亚迪 汉","奔驰 S级","宝马 7系","蔚来 ET9","小米 SU7","哇哇 S800"],BK=CARS.length-1;
+let car=0,force=0,down=false,broke=false,speed=120,raf=0,last=0;
+const $=id=>document.getElementById(id),pedal=$("pedal");
+$("cars").innerHTML=CARS.map((c,i)=>`<button data-i="${i}">${c}</button>`).join("");
+function sel(i){car=i;[...$("cars").children].forEach((b,j)=>b.classList.toggle("on",j==i));reset()}
+$("cars").onclick=e=>{if(e.target.dataset.i!=null)sel(+e.target.dataset.i)};
+function reset(){force=0;broke=false;speed=120;down=false;pedal.classList.remove("broke");pedal.style.transform="";
+ $("msg").textContent="按住下方踏板不放";render()}
+function render(){$("f").style.width=force+"%";$("p").textContent=Math.round(force);$("spd").textContent=Math.round(speed);
+ if(!broke)pedal.style.transform=`rotate(${-force*0.18}deg) scaleY(${1-force*0.002})`}
+function snap(){broke=true;down=false;pedal.classList.add("broke");pedal.style.transform="";
+ $("msg").textContent="咔嚓!踏板断了!💥 车速依然 "+Math.round(speed)+" km/h";
+ $("app").classList.add("shake");setTimeout(()=>$("app").classList.remove("shake"),300);
+ if(navigator.vibrate)try{navigator.vibrate([80,40,200])}catch(e){}}
+function loop(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;
+ if(!broke){
+  force=Math.max(0,Math.min(100,force+(down?60:-80)*dt));
+  if(!broke&&!(car===BK&&force>=100)){speed=Math.max(0,speed-force*0.35*dt)}
+  if(car===BK&&force>=100&&down)snap();
+  else if(force>=100&&car!==BK&&speed===0)$("msg").textContent="车稳稳停住了 ✅";
+  else if(down&&!broke)$("msg").textContent=force<60?"继续用力…":"再用力!";
+  render()}
+ raf=requestAnimationFrame(loop)}
+const dn=e=>{e.preventDefault();if(!broke)down=true},up=()=>{down=false;if(!broke&&force<100)$("msg").textContent="按住下方踏板不放"};
+pedal.addEventListener("pointerdown",dn);addEventListener("pointerup",up);addEventListener("pointercancel",up);
+$("rst").onclick=reset;
+sel(0);raf=requestAnimationFrame(loop);
+</script></body></html>
