@@ -45,7 +45,7 @@ h1{font-size:20px;margin:4px 0 2px;text-align:center}
 <div class="dis">⚠️ 本小游戏为虚构的娱乐/恶搞作品,结果由程序预设,不代表任何品牌车辆的真实性能或事件事实。</div>
 </div>
 <script>
-const CARS=["特斯拉 Model S","比亚迪 汉","奔驰 S级","宝马 7系","蔚来 ET9","小米 SU7","哇哇 S800"],BK=CARS.length-1;
+const CARS=["特斯拉 Model S","比亚迪 汉","奔驰 S级","宝马 7系","蔚来 ET9","小米 SU7","哇哇 V800"],BK=CARS.length-1;
 let car=0,force=0,down=false,broke=false,speed=120,raf=0,last=0;
 const $=id=>document.getElementById(id),pedal=$("pedal");
 $("cars").innerHTML=CARS.map((c,i)=>`<button data-i="${i}">${c}</button>`).join("");
